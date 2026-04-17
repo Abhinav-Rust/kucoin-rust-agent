@@ -169,4 +169,6 @@ cargo run
 
 ## Disclaimer
 
-This agent was built and battle-tested against KuCoin's live Futures API. It is published for educational and portfolio purposes. Use at your own risk — automated trading involves significant financial risk. Always verify order parameters before deploying against real capital.
+This agent was built and battle-tested against KuCoin's live Futures API. It is published for educational and portfolio purposes only.
+
+**The author assumes no responsibility for any financial losses or gains incurred by users of this software.** This code is provided as-is, with no guarantees of correctness, profitability, or suitability for live trading. Automated trading involves significant financial risk — always verify order parameters before deploying against real capital.
