@@ -58,4 +58,20 @@ mod tests {
 
         assert!(result.is_none());
     }
+
+    #[test]
+    fn test_tick_size_precision() {
+        assert_eq!(tick_size_precision(0.001), 3);
+        assert_eq!(tick_size_precision(0.1), 1);
+        assert_eq!(tick_size_precision(1.0), 0);
+        assert_eq!(tick_size_precision(0.00001), 5);
+        assert_eq!(tick_size_precision(0.0), 2);
+    }
+
+    #[test]
+    fn test_format_price() {
+        assert_eq!(format_price(150.88235, 0.001, 3), 150.882);
+        assert_eq!(format_price(65432.14, 0.1, 1), 65432.1);
+        assert_eq!(format_price(100.0, 1.0, 0), 100.0);
+    }
 }

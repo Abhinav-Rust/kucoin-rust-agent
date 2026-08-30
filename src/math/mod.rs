@@ -31,13 +31,35 @@ pub fn calculate_position(
     let target_tp_price = last_trade_price + tp_price_diff;
 
     // Round to nearest tick_size
-    let rounded_tp_price = (target_tp_price / tick_size).round() * tick_size;
+    let precision = tick_size_precision(tick_size);
+    let rounded_tp_price = format_price(target_tp_price, tick_size, precision);
 
     Some(PositionCalculation {
         position_value_usdt,
         lots,
         target_tp_price: rounded_tp_price,
     })
+}
+
+/// Calculates the required decimal places from a tick size (e.g. 0.001 -> 3, 0.1 -> 1, 1 -> 0).
+pub fn tick_size_precision(tick_size: f64) -> usize {
+    if tick_size <= 0.0 {
+        return 2;
+    }
+    let s = format!("{:.8}", tick_size);
+    let s = s.trim_end_matches('0');
+    if let Some(pos) = s.find('.') {
+        s[pos + 1..].len()
+    } else {
+        0
+    }
+}
+
+/// Rounds a price to the nearest tick step and formats/parses it to remove floating point artifacts.
+pub fn format_price(price: f64, tick_size: f64, precision: usize) -> f64 {
+    let rounded = (price / tick_size).round() * tick_size;
+    let formatted = format!("{:.1$}", rounded, precision);
+    formatted.parse::<f64>().unwrap_or(rounded)
 }
 
 #[cfg(test)]
