@@ -1,11 +1,14 @@
 use crate::auth::{generate_auth_headers, Credentials};
+use crate::math::tick_size_precision;
 use crate::models::{ContractResponse, PositionConfig};
 use anyhow::{Context, Result};
 use reqwest::Client;
 use serde_json::json;
+use std::time::Duration;
 use uuid::Uuid;
 
 const API_BASE_URL: &str = "https://api-futures.kucoin.com";
+const DEFAULT_TIMEOUT_SECS: u64 = 10;
 
 /// A specialized HTTP client to communicate with the KuCoin Futures API.
 pub struct KuCoinApiClient {
@@ -16,8 +19,14 @@ pub struct KuCoinApiClient {
 impl KuCoinApiClient {
     /// Initializes a new `KuCoinApiClient` using the provided credentials.
     pub fn new(credentials: Credentials) -> Self {
+        let client = Client::builder()
+            .timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS))
+            .connect_timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS))
+            .build()
+            .unwrap_or_else(|_| Client::new());
+
         Self {
-            client: Client::new(),
+            client,
             credentials,
         }
     }
@@ -48,6 +57,14 @@ impl KuCoinApiClient {
             .json()
             .await
             .context("Failed to parse contract details JSON")?;
+
+        if let Some(ref code) = body.code {
+            if code != "200000" {
+                let msg = body.msg.as_deref().unwrap_or("Unknown error");
+                anyhow::bail!("KuCoin API Error (code {}): {}", code, msg);
+            }
+        }
+
         Ok(body)
     }
 
@@ -91,8 +108,12 @@ impl KuCoinApiClient {
         config: &PositionConfig,
         lots: i64,
         target_price: f64,
+        tick_size: f64,
     ) -> Result<reqwest::Response> {
         let endpoint = "/api/v1/orders";
+        let precision = tick_size_precision(tick_size);
+        let formatted_price = format!("{:.1$}", target_price, precision);
+
         let body = json!({
             "clientOid": Uuid::new_v4().to_string(),
             "symbol": config.symbol,
@@ -100,7 +121,7 @@ impl KuCoinApiClient {
             "leverage": config.leverage as i64,
             "type": "limit",
             "size": lots.to_string(),
-            "price": format!("{:.3}", target_price),
+            "price": formatted_price,
             "closeOrder": true,
             "marginMode": "ISOLATED"
         })

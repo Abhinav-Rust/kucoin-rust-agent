@@ -9,11 +9,6 @@ use auth::Credentials;
 use models::PositionConfig;
 use std::env;
 
-const MARGIN_USDT: f64 = 13.0;
-const LEVERAGE: f64 = 20.0;
-const PROFIT_TARGET_USDT: f64 = 1.5;
-const SYMBOL: &str = "SOLUSDTM";
-
 #[tokio::main]
 async fn main() -> Result<()> {
     // Load variables from .env
@@ -31,29 +26,7 @@ async fn main() -> Result<()> {
         api_passphrase,
     };
 
-    let margin_usdt = env::var("MARGIN_USDT")
-        .unwrap_or_else(|_| MARGIN_USDT.to_string())
-        .parse::<f64>()
-        .unwrap_or(MARGIN_USDT);
-
-    let leverage = env::var("LEVERAGE")
-        .unwrap_or_else(|_| LEVERAGE.to_string())
-        .parse::<f64>()
-        .unwrap_or(LEVERAGE);
-
-    let profit_target_usdt = env::var("PROFIT_TARGET_USDT")
-        .unwrap_or_else(|_| PROFIT_TARGET_USDT.to_string())
-        .parse::<f64>()
-        .unwrap_or(PROFIT_TARGET_USDT);
-
-    let symbol = env::var("SYMBOL").unwrap_or_else(|_| SYMBOL.to_string());
-
-    let config = PositionConfig {
-        margin_usdt,
-        leverage,
-        profit_target_usdt,
-        symbol,
-    };
+    let config = PositionConfig::from_env();
 
     let client = KuCoinApiClient::new(credentials);
 
@@ -94,7 +67,7 @@ async fn main() -> Result<()> {
 
     println!("3. Placing Limit Take Profit Order");
     let tp_res = client
-        .place_limit_take_profit(&config, calc.lots, calc.target_tp_price)
+        .place_limit_take_profit(&config, calc.lots, calc.target_tp_price, data.tick_size)
         .await?;
     println!("Take Profit Order HTTP Status: {}", tp_res.status());
 
